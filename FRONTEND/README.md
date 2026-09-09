@@ -25,7 +25,7 @@ cp .env.example .env.local
 Isi variabel berikut, arahkan ke URL backend yang sudah berjalan:
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:8000/api
+NEXT_PUBLIC_API_URL=http://localhost:8000/
 ```
 
 ### 3. Jalankan development server
