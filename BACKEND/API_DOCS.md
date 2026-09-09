@@ -1,15 +1,10 @@
-# LMS API Documentation - Authentication & Audit Logging
+# LMS API Documentation - Authentication & Content Management
 
-Dokumentasi ini mencakup endpoint authentication (Auth) yang telah diimplementasikan pada Backend Laravel 13 dengan database PostgreSQL (`system` schema).
+Dokumentasi ini mencakup endpoint Authentication (Auth) dan Content Management (CRUD) yang diimplementasikan pada Backend Laravel 13 dengan database PostgreSQL.
 
-> **PENTING: Audit Activity Logging**
-> Setiap aktivitas auth secara otomatis dicatat ke tabel `"system"."user_activity"` dengan kolom:
-> - `user_activity_id` (int8 dari sequence `system.user_activity_id_seq`)
-> - `user_activity_user_uuid` (UUID pengguna)
-> - `user_activity_action` (`REGISTER`, `LOGIN`, `LOGIN_FAILED`, `LOGOUT`)
-> - `user_activity_description` (Keterangan status / error)
-> - `user_activity_ip_address` (IP client / requester)
-> - `user_activity_create_date` (Timestamp aktivitas)
+> **PENTING: Arsitektur Multi-Schema PostgreSQL**
+> - **Schema `system`**: Tabel `"system"."users"` dan `"system"."user_activity"` (Audit Log Auth).
+> - **Schema `public`**: Tabel `"public"."content"` dan sequence `"public"."content_id_seq"` untuk modul Content Management.
 
 ---
 
@@ -29,12 +24,15 @@ Format standar response JSON:
 
 ---
 
+# BAGIAN 1: AUTHENTICATION
+
 ## 1. Register User
 
-Mendaftarkan pengguna baru ke dalam tabel `"system"."users"`. Status pengguna otomatis aktif (`users_status: 1`), `users_uuid` di-generate via UUID v4, dan ID diambil dari `system.users_id_seq`.
+Mendaftarkan pengguna baru ke dalam tabel `"system"."users"`. Status pengguna otomatis aktif (`users_status: 1`), `users_uuid` di-generate via UUID v4, dan ID diambil dari sequence `system.users_id_seq`. Aktivitas dicatat ke audit log dengan action `REGISTER`.
 
 - **URL:** `/auth/register`
 - **Method:** `POST`
+- **Auth:** Public (tanpa token)
 - **Headers:** `Content-Type: application/json`, `Accept: application/json`
 - **Activity Log Action:** `REGISTER`
 
@@ -81,14 +79,13 @@ Mendaftarkan pengguna baru ke dalam tabel `"system"."users"`. Status pengguna ot
 
 ## 2. Login User
 
-Melakukan otentikasi email dan password, memeriksa apakah status user aktif (`users_status === 1`), dan menghasilkan JSON Web Token (JWT).
+Melakukan otentikasi email dan password, memeriksa status aktif (`users_status === 1`), dan menghasilkan JWT Bearer Token.
 
 - **URL:** `/auth/login`
 - **Method:** `POST`
+- **Auth:** Public
 - **Headers:** `Content-Type: application/json`, `Accept: application/json`
-- **Activity Log Action:** 
-  - `LOGIN` (jika kredensial valid dan user aktif)
-  - `LOGIN_FAILED` (jika password salah, email tidak ditemukan, atau user non-aktif)
+- **Activity Log Action:** `LOGIN` / `LOGIN_FAILED`
 
 ### Request Body:
 ```json
@@ -97,7 +94,6 @@ Melakukan otentikasi email dan password, memeriksa apakah status user aktif (`us
   "users_password": "password123"
 }
 ```
-*(Catatan: Menerima juga field `email` dan `password`)*
 
 ### Response Sukses (200 OK):
 ```json
@@ -120,7 +116,6 @@ Melakukan otentikasi email dan password, memeriksa apakah status user aktif (`us
 ```
 
 ### Response Gagal - Kredensial Salah (401 Unauthorized):
-*(Tercatat di user_activity sebagai `LOGIN_FAILED`)*
 ```json
 {
   "success": false,
@@ -129,21 +124,11 @@ Melakukan otentikasi email dan password, memeriksa apakah status user aktif (`us
 }
 ```
 
-### Response Gagal - Akun Non-Aktif (403 Forbidden):
-*(Tercatat di user_activity sebagai `LOGIN_FAILED`)*
-```json
-{
-  "success": false,
-  "message": "Akun tidak aktif, silakan hubungi administrator",
-  "data": null
-}
-```
-
 ---
 
 ## 3. Get Current User Profile (Me)
 
-Mengambil data identitas pengguna yang sedang terotentikasi berdasarkan JWT Bearer token yang dikirim.
+Mengambil data identitas pengguna yang sedang login berdasarkan JWT Bearer token.
 
 - **URL:** `/auth/me`
 - **Method:** `GET`
@@ -167,18 +152,11 @@ Mengambil data identitas pengguna yang sedang terotentikasi berdasarkan JWT Bear
 }
 ```
 
-### Response Gagal - Token Tidak Ada / Expired (401 Unauthorized):
-```json
-{
-  "message": "Unauthenticated."
-}
-```
-
 ---
 
 ## 4. Logout User
 
-Melakukan invalidasi token JWT sehingga tidak dapat digunakan kembali untuk request berikutnya.
+Melakukan invalidasi token JWT.
 
 - **URL:** `/auth/logout`
 - **Method:** `POST`
@@ -198,7 +176,221 @@ Melakukan invalidasi token JWT sehingga tidak dapat digunakan kembali untuk requ
 
 ---
 
-## 5. Ringkasan Audit Log Action di `system.user_activity`
+# BAGIAN 2: CONTENT MANAGEMENT
+
+Semua endpoint Content Management di bawah ini berada di bawah prefix `/content` dan diproteksi dengan JWT middleware (`auth:api`).
+
+Headers Wajib:
+- `Authorization: Bearer <access_token>`
+- `Accept: application/json`
+
+---
+
+## 1. List Contents (Search & Pagination)
+
+Mengambil daftar konten aktif (`content_status = 1`) dengan fitur pencarian teks (ILIKE pada `content_title` dan `content_description`) serta paginasi server-side.
+
+- **URL:** `/content`
+- **Method:** `GET`
+- **Query Parameters:**
+  - `search` (string, optional): Kata kunci pencarian judul atau deskripsi konten
+  - `page` (integer, optional, default: `1`): Nomor halaman
+  - `per_page` (integer, optional, default: `10`, max: `100`): Jumlah data per halaman
+
+### Contoh Request URL:
+```
+GET /api/content?search=laravel&page=1&per_page=10
+```
+
+### Response Sukses (200 OK):
+```json
+{
+  "success": true,
+  "message": "Daftar konten berhasil diambil",
+  "data": {
+    "items": [
+      {
+        "content_id": 1,
+        "content_uuid": "39e65167-47de-4dad-88d3-85528f161425",
+        "content_title": "Tutorial Laravel 13 & PostgreSQL",
+        "content_description": "Panduan lengkap pembuatan REST API dengan modul otentikasi JWT dan multi-schema PostgreSQL.",
+        "content_category": "Teknologi",
+        "content_status": 1,
+        "content_create_date": "2026-09-09T13:20:00.000000Z",
+        "content_create_by": "c9a4bb38-4e89-4d6c-b39b-e7b4588e3647",
+        "content_update_date": null,
+        "content_update_by": null
+      }
+    ],
+    "total": 1,
+    "current_page": 1,
+    "per_page": 10,
+    "last_page": 1
+  }
+}
+```
+
+---
+
+## 2. Create Content
+
+Menambahkan data konten baru ke tabel `"public"."content"`.
+- `content_id` di-generate via sequence `public.content_id_seq`
+- `content_uuid` di-generate via UUID v4
+- `content_status` otomatis bernilai `1` (aktif)
+- `content_create_by` otomatis diisi dengan `users_uuid` dari user yang sedang login
+
+- **URL:** `/content`
+- **Method:** `POST`
+- **Headers:** `Content-Type: application/json`
+
+### Request Body:
+```json
+{
+  "content_title": "Dasar-Dasar React & Next.js",
+  "content_description": "Memahami konsep Server Components dan Client Components.",
+  "content_category": "Pemrograman"
+}
+```
+
+### Response Sukses (201 Created):
+```json
+{
+  "success": true,
+  "message": "Konten berhasil dibuat",
+  "data": {
+    "content_id": 2,
+    "content_uuid": "8b51d3cb-b09e-4c75-8025-0ee72e44d5ff",
+    "content_title": "Dasar-Dasar React & Next.js",
+    "content_description": "Memahami konsep Server Components dan Client Components.",
+    "content_category": "Pemrograman",
+    "content_status": 1,
+    "content_create_date": "2026-09-09T13:25:00.000000Z",
+    "content_create_by": "c9a4bb38-4e89-4d6c-b39b-e7b4588e3647",
+    "content_update_date": null,
+    "content_update_by": null
+  }
+}
+```
+
+### Response Error Validasi (422 Unprocessable Content):
+```json
+{
+  "success": false,
+  "message": "Validasi gagal",
+  "data": {
+    "content_title": ["Judul konten wajib diisi."]
+  }
+}
+```
+
+---
+
+## 3. Detail Content
+
+Mengambil data satu konten aktif berdasarkan `content_id`.
+
+- **URL:** `/content/{id}`
+- **Method:** `GET`
+
+### Response Sukses (200 OK):
+```json
+{
+  "success": true,
+  "message": "Detail konten berhasil diambil",
+  "data": {
+    "content_id": 1,
+    "content_uuid": "39e65167-47de-4dad-88d3-85528f161425",
+    "content_title": "Tutorial Laravel 13 & PostgreSQL",
+    "content_description": "Panduan lengkap pembuatan REST API...",
+    "content_category": "Teknologi",
+    "content_status": 1,
+    "content_create_date": "2026-09-09T13:20:00.000000Z",
+    "content_create_by": "c9a4bb38-4e89-4d6c-b39b-e7b4588e3647",
+    "content_update_date": null,
+    "content_update_by": null
+  }
+}
+```
+
+### Response Tidak Ditemukan (404 Not Found):
+```json
+{
+  "success": false,
+  "message": "Konten tidak ditemukan",
+  "data": null
+}
+```
+
+---
+
+## 4. Update Content
+
+Memperbarui data konten. Kolom `content_update_date` dan `content_update_by` otomatis diperbarui sesuai identitas user yang sedang login.
+
+- **URL:** `/content/{id}`
+- **Method:** `PUT`
+- **Headers:** `Content-Type: application/json`
+
+### Request Body:
+```json
+{
+  "content_title": "Tutorial Laravel 13 & PostgreSQL (Revisi 2026)",
+  "content_description": "Deskripsi yang telah diperbarui.",
+  "content_category": "Teknologi & Backend"
+}
+```
+
+### Response Sukses (200 OK):
+```json
+{
+  "success": true,
+  "message": "Konten berhasil diperbarui",
+  "data": {
+    "content_id": 1,
+    "content_uuid": "39e65167-47de-4dad-88d3-85528f161425",
+    "content_title": "Tutorial Laravel 13 & PostgreSQL (Revisi 2026)",
+    "content_description": "Deskripsi yang telah diperbarui.",
+    "content_category": "Teknologi & Backend",
+    "content_status": 1,
+    "content_create_date": "2026-09-09T13:20:00.000000Z",
+    "content_create_by": "c9a4bb38-4e89-4d6c-b39b-e7b4588e3647",
+    "content_update_date": "2026-09-09T13:30:00.000000Z",
+    "content_update_by": "c9a4bb38-4e89-4d6c-b39b-e7b4588e3647"
+  }
+}
+```
+
+---
+
+## 5. Delete Content (Soft Delete)
+
+Menghapus konten secara soft-delete dengan mengubah `content_status = 0`. Data row tidak dihapus secara fisik dari database.
+
+- **URL:** `/content/{id}`
+- **Method:** `DELETE`
+
+### Response Sukses (200 OK):
+```json
+{
+  "success": true,
+  "message": "Konten berhasil dihapus",
+  "data": null
+}
+```
+
+### Response Tidak Ditemukan (404 Not Found):
+```json
+{
+  "success": false,
+  "message": "Konten tidak ditemukan",
+  "data": null
+}
+```
+
+---
+
+## Ringkasan Audit Log Action di `system.user_activity`
 
 | Action | Kapan Dipicu | Deskripsi Contoh |
 | :--- | :--- | :--- |
