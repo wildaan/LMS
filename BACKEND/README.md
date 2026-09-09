@@ -27,9 +27,9 @@ Buka file `.env`, isi konfigurasi database:
 DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
 DB_PORT=5432
-DB_DATABASE=nama_database
+DB_DATABASE=adhivasindo
 DB_USERNAME=postgres
-DB_PASSWORD=password_kamu
+DB_PASSWORD=
 ```
 
 **Penting:** Project ini menggunakan dua schema PostgreSQL:
