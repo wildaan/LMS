@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ContentController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -21,4 +22,12 @@ Route::prefix('auth')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
     });
+});
+
+Route::middleware('auth:api')->prefix('content')->group(function () {
+    Route::get('/', [ContentController::class, 'index']);
+    Route::post('/', [ContentController::class, 'store']);
+    Route::get('/{id}', [ContentController::class, 'show']);
+    Route::put('/{id}', [ContentController::class, 'update']);
+    Route::delete('/{id}', [ContentController::class, 'destroy']);
 });

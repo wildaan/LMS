@@ -1,75 +1,71 @@
 import api from "@/lib/api";
 
-/**
- * Content Management Service Layer (Skeleton / Placeholder)
- * TODO: Implement API caller methods for CRUD and pagination/search
- */
-
 export interface ContentItem {
-  content_id?: number;
-  title: string;
-  description?: string;
-  category?: string;
-  status?: number;
-  created_at?: string;
-  updated_at?: string;
+  content_id: number;
+  content_uuid?: string;
+  content_title: string;
+  content_description?: string | null;
+  content_category?: string | null;
+  content_status?: number;
+  content_create_date?: string | null;
+  content_create_by?: string | null;
+  content_update_date?: string | null;
+  content_update_by?: string | null;
 }
 
 export interface ContentQueryParams {
   page?: number;
-  limit?: number;
+  per_page?: number;
   search?: string;
-  category?: string;
+}
+
+export interface ContentListResponse {
+  success: boolean;
+  message: string;
+  data: {
+    items: ContentItem[];
+    total: number;
+    current_page: number;
+    per_page: number;
+    last_page: number;
+  };
+}
+
+export interface ContentDetailResponse {
+  success: boolean;
+  message: string;
+  data: ContentItem;
+}
+
+export interface ContentPayload {
+  content_title: string;
+  content_description?: string;
+  content_category?: string;
 }
 
 export const contentService = {
-  /**
-   * Fetch contents with search & pagination
-   * TODO: Connect to BE /api/contents
-   */
-  getContents: async (params?: ContentQueryParams) => {
-    // TODO: return api.get('/api/contents', { params });
-    console.log("TODO: Fetch contents with params:", params);
-    return Promise.resolve({ data: [] });
+  getContents: async (params?: ContentQueryParams): Promise<ContentListResponse> => {
+    const response = await api.get<ContentListResponse>("/api/content", { params });
+    return response.data;
   },
 
-  /**
-   * Fetch content detail by ID
-   * TODO: Connect to BE /api/contents/:id
-   */
-  getContentById: async (id: number | string) => {
-    // TODO: return api.get(`/api/contents/${id}`);
-    console.log("TODO: Fetch content detail:", id);
-    return Promise.resolve({ data: null });
+  getContentById: async (id: number | string): Promise<ContentDetailResponse> => {
+    const response = await api.get<ContentDetailResponse>(`/api/content/${id}`);
+    return response.data;
   },
 
-  /**
-   * Create new content
-   * TODO: Connect to BE /api/contents
-   */
-  createContent: async (data: ContentItem) => {
-    // TODO: return api.post('/api/contents', data);
-    console.log("TODO: Create content:", data);
-    return Promise.resolve({ success: true });
+  createContent: async (data: ContentPayload): Promise<ContentDetailResponse> => {
+    const response = await api.post<ContentDetailResponse>("/api/content", data);
+    return response.data;
   },
 
-  /**
-   * Update existing content
-   * TODO: Connect to BE /api/contents/:id
-   */
-  updateContent: async (id: number | string, data: Partial<ContentItem>) => {
-    // TODO: return api.put(`/api/contents/${id}`, data);
-    console.log("TODO: Update content:", id, data);
-    return Promise.resolve({ success: true });
+  updateContent: async (id: number | string, data: ContentPayload): Promise<ContentDetailResponse> => {
+    const response = await api.put<ContentDetailResponse>(`/api/content/${id}`, data);
+    return response.data;
   },
 
-  /**
-   * Delete content
-   * TODO: Connect to BE /api/contents/:id
-   */
-  deleteContent: async (id: number | string) => {
-    // TODO: return api.delete(`/api/contents/${id}`);
-    console.log("TODO: Delete content:", id);
-    return Promise.resolve({ success: true });
+  deleteContent: async (id: number | string): Promise<{ success: boolean; message: string; data: null }> => {
+    const response = await api.delete<{ success: boolean; message: string; data: null }>(`/api/content/${id}`);
+    return response.data;
   },
 };
