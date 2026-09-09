@@ -4,11 +4,12 @@ import React, { useState } from "react";
 import { Card, CardBody } from "reactstrap";
 import { FiUser, FiCopy, FiCheck } from "react-icons/fi";
 import Layout from "@/components/Layout";
-import { useAuth, AuthProvider } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 
-export default function DashboardPage() {
+function DashboardContent() {
   const { user } = useAuth();
   const [copied, setCopied] = useState<boolean>(false);
+
   const handleCopyUuid = () => {
     if (user?.users_uuid) {
       navigator.clipboard.writeText(user.users_uuid);
@@ -22,7 +23,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <Layout>
+    <>
       <div style={{ marginBottom: "24px" }}>
         <h1
           style={{
@@ -121,12 +122,12 @@ export default function DashboardPage() {
                     width: "8px",
                     height: "8px",
                     borderRadius: "50%",
-                    backgroundColor: "#22c55e",
+                    backgroundColor: user?.users_status === 1 || user?.users_status === undefined ? "#22c55e" : "#ef4444",
                     display: "inline-block",
                   }}
                 />
                 <span style={{ fontSize: "14px", color: "#111827", fontWeight: 500 }}>
-                  Aktif
+                  {user?.users_status === 1 || user?.users_status === undefined ? "Aktif" : "Tidak Aktif"}
                 </span>
               </div>
             </div>
@@ -188,6 +189,14 @@ export default function DashboardPage() {
           </div>
         </CardBody>
       </Card>
+    </>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Layout>
+      <DashboardContent />
     </Layout>
   );
 }
