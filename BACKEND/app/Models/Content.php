@@ -12,9 +12,9 @@ class Content extends Model
     use HasFactory;
 
     /**
-     * Database table name explicitly specifying public schema.
+     * Database table name.
      */
-    protected $table = 'public.content';
+    protected $table = 'content';
 
     /**
      * Primary key column.
@@ -71,7 +71,7 @@ class Content extends Model
     {
         static::creating(function (Content $content) {
             if (empty($content->content_id)) {
-                $content->content_id = (int) DB::scalar("SELECT nextval('public.content_id_seq')");
+                $content->content_id = (int) DB::scalar("SELECT nextval('content_id_seq')");
             }
             if (empty($content->content_uuid)) {
                 $content->content_uuid = (string) Str::uuid();

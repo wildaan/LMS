@@ -32,11 +32,7 @@ DB_USERNAME=postgres
 DB_PASSWORD=
 ```
 
-**Penting:** Project ini menggunakan dua schema PostgreSQL:
-- Schema `system` — menyimpan tabel `users` dan `user_activity`
-- Schema `public` — menyimpan tabel `content`
-
-Pastikan kedua schema tersebut sudah ada di database sebelum menjalankan migration. Migration akan otomatis membuat schema `system` jika belum ada, tapi pastikan database-nya sendiri sudah dibuat.
+Pastikan database sudah dibuat sebelum menjalankan migration. Migration akan otomatis membuat semua tabel (`users`, `user_activity`, `content`) di schema `public` (default PostgreSQL).
 
 ### 3. Generate key & JWT secret
 

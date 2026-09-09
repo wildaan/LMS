@@ -14,7 +14,7 @@ class UserActivity extends Model
     /**
      * Database table name.
      */
-    protected $table = 'system.user_activity';
+    protected $table = 'user_activity';
 
     /**
      * Primary key column.
@@ -69,7 +69,7 @@ class UserActivity extends Model
      */
     public static function logActivity(?string $userUuid, string $action, ?string $description = null, ?Request $request = null): self
     {
-        $nextId = (int) DB::scalar("SELECT nextval('system.user_activity_id_seq')");
+        $nextId = (int) DB::scalar("SELECT nextval('user_activity_id_seq')");
         $ip = $request ? $request->ip() : request()->ip();
 
         return static::create([

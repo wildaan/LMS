@@ -10,10 +10,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement('CREATE SEQUENCE IF NOT EXISTS "public"."content_id_seq" START WITH 1 INCREMENT BY 1;');
+        DB::statement('CREATE SEQUENCE IF NOT EXISTS "content_id_seq" START WITH 1 INCREMENT BY 1;');
 
         DB::statement('
-            CREATE TABLE IF NOT EXISTS "public"."content" (
+            CREATE TABLE IF NOT EXISTS "content" (
                 "content_id" int8 NOT NULL,
                 "content_uuid" varchar(38),
                 "content_title" varchar(255) NOT NULL,
@@ -34,7 +34,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement('DROP TABLE IF EXISTS "public"."content" CASCADE;');
-        DB::statement('DROP SEQUENCE IF EXISTS "public"."content_id_seq";');
+        DB::statement('DROP TABLE IF EXISTS "content" CASCADE;');
+        DB::statement('DROP SEQUENCE IF EXISTS "content_id_seq";');
     }
 };

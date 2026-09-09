@@ -2,9 +2,7 @@
 
 Dokumentasi ini mencakup endpoint Authentication (Auth) dan Content Management (CRUD) yang diimplementasikan pada Backend Laravel 13 dengan database PostgreSQL.
 
-> **PENTING: Arsitektur Multi-Schema PostgreSQL**
-> - **Schema `system`**: Tabel `"system"."users"` dan `"system"."user_activity"` (Audit Log Auth).
-> - **Schema `public`**: Tabel `"public"."content"` dan sequence `"public"."content_id_seq"` untuk modul Content Management.
+> **Catatan:** Semua tabel (`users`, `user_activity`, `content`) beserta sequence-nya berada di schema `public` (default PostgreSQL).
 
 ---
 
@@ -28,7 +26,7 @@ Format standar response JSON:
 
 ## 1. Register User
 
-Mendaftarkan pengguna baru ke dalam tabel `"system"."users"`. Status pengguna otomatis aktif (`users_status: 1`), `users_uuid` di-generate via UUID v4, dan ID diambil dari sequence `system.users_id_seq`. Aktivitas dicatat ke audit log dengan action `REGISTER`.
+Mendaftarkan pengguna baru ke dalam tabel `users`. Status pengguna otomatis aktif (`users_status: 1`), `users_uuid` di-generate via UUID v4, dan ID diambil dari sequence `users_id_seq`. Aktivitas dicatat ke audit log dengan action `REGISTER`.
 
 - **URL:** `/auth/register`
 - **Method:** `POST`
@@ -234,8 +232,8 @@ GET /api/content?search=laravel&page=1&per_page=10
 
 ## 2. Create Content
 
-Menambahkan data konten baru ke tabel `"public"."content"`.
-- `content_id` di-generate via sequence `public.content_id_seq`
+Menambahkan data konten baru ke tabel `content`.
+- `content_id` di-generate via sequence `content_id_seq`
 - `content_uuid` di-generate via UUID v4
 - `content_status` otomatis bernilai `1` (aktif)
 - `content_create_by` otomatis diisi dengan `users_uuid` dari user yang sedang login
@@ -390,7 +388,7 @@ Menghapus konten secara soft-delete dengan mengubah `content_status = 0`. Data r
 
 ---
 
-## Ringkasan Audit Log Action di `system.user_activity`
+## Ringkasan Audit Log Action di `user_activity`
 
 | Action | Kapan Dipicu | Deskripsi Contoh |
 | :--- | :--- | :--- |
