@@ -12,16 +12,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // 1. Ensure schema "system" exists
-        DB::statement('CREATE SCHEMA IF NOT EXISTS "system";');
+        // 1. Create sequences for int8 IDs
+        DB::statement('CREATE SEQUENCE IF NOT EXISTS "users_id_seq";');
+        DB::statement('CREATE SEQUENCE IF NOT EXISTS "user_activity_id_seq";');
 
-        // 2. Create sequences for int8 IDs
-        DB::statement('CREATE SEQUENCE IF NOT EXISTS "system"."users_id_seq";');
-        DB::statement('CREATE SEQUENCE IF NOT EXISTS "system"."user_activity_id_seq";');
-
-        // 3. Create table "system"."users" with exact raw SQL
+        // 2. Create table "users" with exact raw SQL
         DB::statement('
-            CREATE TABLE IF NOT EXISTS "system"."users" (
+            CREATE TABLE IF NOT EXISTS "users" (
                 "users_id" int8 NOT NULL,
                 "users_uuid" varchar(38),
                 "users_email" varchar(255),
@@ -36,9 +33,9 @@ return new class extends Migration
             );
         ');
 
-        // 4. Create table "system"."user_activity" with exact raw SQL
+        // 3. Create table "user_activity" with exact raw SQL
         DB::statement('
-            CREATE TABLE IF NOT EXISTS "system"."user_activity" (
+            CREATE TABLE IF NOT EXISTS "user_activity" (
                 "user_activity_id" int8 NOT NULL,
                 "user_activity_user_uuid" varchar(38),
                 "user_activity_action" varchar(100),
@@ -50,7 +47,7 @@ return new class extends Migration
         ');
 
         // Index on user_activity_user_uuid for efficient lookup
-        DB::statement('CREATE INDEX IF NOT EXISTS "user_activity_user_uuid_index" ON "system"."user_activity" ("user_activity_user_uuid");');
+        DB::statement('CREATE INDEX IF NOT EXISTS "user_activity_user_uuid_index" ON "user_activity" ("user_activity_user_uuid");');
 
         // Laravel session & password reset support
         if (!Schema::hasTable('password_reset_tokens')) {
@@ -80,9 +77,9 @@ return new class extends Migration
     {
         Schema::dropIfExists('sessions');
         Schema::dropIfExists('password_reset_tokens');
-        DB::statement('DROP TABLE IF EXISTS "system"."user_activity";');
-        DB::statement('DROP TABLE IF EXISTS "system"."users";');
-        DB::statement('DROP SEQUENCE IF EXISTS "system"."user_activity_id_seq";');
-        DB::statement('DROP SEQUENCE IF EXISTS "system"."users_id_seq";');
+        DB::statement('DROP TABLE IF EXISTS "user_activity";');
+        DB::statement('DROP TABLE IF EXISTS "users";');
+        DB::statement('DROP SEQUENCE IF EXISTS "user_activity_id_seq";');
+        DB::statement('DROP SEQUENCE IF EXISTS "users_id_seq";');
     }
 };

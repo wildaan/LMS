@@ -16,7 +16,7 @@ class User extends Authenticatable implements JWTSubject
     /**
      * Database table name.
      */
-    protected $table = 'system.users';
+    protected $table = 'users';
 
     /**
      * Primary key column.
@@ -82,7 +82,7 @@ class User extends Authenticatable implements JWTSubject
     {
         static::creating(function (User $user) {
             if (empty($user->users_id)) {
-                $user->users_id = (int) DB::scalar("SELECT nextval('system.users_id_seq')");
+                $user->users_id = (int) DB::scalar("SELECT nextval('users_id_seq')");
             }
             if (empty($user->users_uuid)) {
                 $user->users_uuid = (string) Str::uuid();

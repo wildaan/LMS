@@ -7,7 +7,7 @@ Fullstack take-home test project yang mengimplementasikan module **Authenticatio
 ### Backend
 - **Laravel 13** (PHP 8.3)
 - **JWT Authentication** — [tymon/jwt-auth](https://github.com/tymondesigns/jwt-auth)
-- **PostgreSQL** — dengan multi-schema (`system` untuk user/activity, `public` untuk content)
+- **PostgreSQL** — semua tabel di schema `public` (default)
 
 ### Frontend
 - **Next.js 16** (React 19, TypeScript)
@@ -83,17 +83,17 @@ erDiagram
 | `content.content_create_by` → `users.users_uuid` | `content` | `users` | Logical reference — user yang membuat content |
 | `content.content_update_by` → `users.users_uuid` | `content` | `users` | Logical reference — user yang terakhir mengupdate content |
 
-> **Catatan:** Relasi `content` → `users` bersifat **logical** (bukan FK constraint di database), karena kedua tabel berada di schema yang berbeda (`public` vs `system`).
+> **Catatan:** Relasi `content` → `users` bersifat **logical** (bukan FK constraint di database).
 
 ---
 
 ## Table Specification
 
-### Tabel `users` — Schema: `system`
+### Tabel `users` — Schema: `public`
 
 | Nama Kolom | Tipe Data | Nullable | Keterangan |
 |------------|-----------|----------|------------|
-| `users_id` | `int8` | **NOT NULL** | Primary key, auto-increment via sequence `system.users_id_seq` |
+| `users_id` | `int8` | **NOT NULL** | Primary key, auto-increment via sequence `users_id_seq` |
 | `users_uuid` | `varchar(38)` | NULL | UUID unik sebagai identifier user (digunakan untuk referensi antar tabel) |
 | `users_email` | `varchar(255)` | NULL | Alamat email user |
 | `users_user_name` | `varchar(255)` | NULL | Username untuk login |
@@ -104,11 +104,11 @@ erDiagram
 | `users_update_by` | `varchar(38)` | NULL | UUID user yang terakhir mengupdate record ini |
 | `users_status` | `int4` | NULL | Status user (misal: `1` = aktif, `0` = nonaktif) |
 
-### Tabel `user_activity` — Schema: `system`
+### Tabel `user_activity` — Schema: `public`
 
 | Nama Kolom | Tipe Data | Nullable | Keterangan |
 |------------|-----------|----------|------------|
-| `user_activity_id` | `int8` | **NOT NULL** | Primary key, auto-increment via sequence `system.user_activity_id_seq` |
+| `user_activity_id` | `int8` | **NOT NULL** | Primary key, auto-increment via sequence `user_activity_id_seq` |
 | `user_activity_user_uuid` | `varchar(38)` | NULL | UUID user yang melakukan aktivitas — referensi ke `users.users_uuid` |
 | `user_activity_action` | `varchar(100)` | NULL | Nama aksi yang dilakukan (contoh: `LOGIN`, `REGISTER`, `CREATE_CONTENT`, dll.) |
 | `user_activity_description` | `text` | NULL | Deskripsi detail aktivitas |
@@ -119,7 +119,7 @@ erDiagram
 
 | Nama Kolom | Tipe Data | Nullable | Keterangan |
 |------------|-----------|----------|------------|
-| `content_id` | `int8` | **NOT NULL** | Primary key, auto-increment via sequence `public.content_id_seq` |
+| `content_id` | `int8` | **NOT NULL** | Primary key, auto-increment via sequence `content_id_seq` |
 | `content_uuid` | `varchar(38)` | NULL | UUID unik sebagai identifier content |
 | `content_title` | `varchar(255)` | **NOT NULL** | Judul content |
 | `content_description` | `text` | NULL | Deskripsi / isi content |
